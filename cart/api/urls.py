@@ -1,9 +1,6 @@
 from django.urls import path
-from django.http import JsonResponse
-
-def cart_health(request):
-    return JsonResponse({"status": "ok", "service": "cart"})
+from .views import health
 
 urlpatterns = [
-    path("health/", cart_health, name="cart-health"),
+    path("health/", health, name="cart-health"),
 ]

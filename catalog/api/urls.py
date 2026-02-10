@@ -1,9 +1,8 @@
-from django.urls import path
-from django.http import JsonResponse
+from rest_framework.routers import DefaultRouter
+from .views import CategoryViewSet, SubCategoryViewSet
 
-def catalog_health(request):
-    return JsonResponse({"status": "ok", "service": "catalog"})
+router = DefaultRouter()
+router.register(r"categories", CategoryViewSet, basename="catalog-categories")
+router.register(r"subcategories", SubCategoryViewSet, basename="catalog-subcategories")
 
-urlpatterns = [
-    path("health/", catalog_health, name="catalog-health"),
-]
+urlpatterns = router.urls
