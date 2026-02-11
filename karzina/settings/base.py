@@ -29,6 +29,7 @@ INSTALLED_APPS = [
 
     "rest_framework",
     "drf_spectacular",
+    "django_filters",
 
     "users",
     "catalog",
@@ -93,6 +94,11 @@ MEDIA_ROOT = BASE_DIR / "media"
 AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}
+
+REST_FRAMEWORK.update({
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
+})
+
 
 
 SPECTACULAR_SETTINGS = {
