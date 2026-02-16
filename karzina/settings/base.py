@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "django_filters",
+    "rest_framework_simplejwt",
 
     "users",
     "catalog",
@@ -99,7 +100,13 @@ REST_FRAMEWORK.update({
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 })
 
-
+REST_FRAMEWORK.update({
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # xohlasangiz admin session ham qolsin:
+        "rest_framework.authentication.SessionAuthentication",
+    ),
+})
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Karzinka API",
