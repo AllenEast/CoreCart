@@ -14,4 +14,4 @@ router.register(r"brands", BrandViewSet, basename="catalog-brands")
 router.register(r"products", ProductViewSet, basename="catalog-products")
 router.register(r"variants", ProductVariantViewSet, basename="catalog-variants")
 
-urlpatterns = router.urls
+urlpatterns = router.urls 

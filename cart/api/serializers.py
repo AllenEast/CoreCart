@@ -1,19 +1,14 @@
 from rest_framework import serializers
 from cart.models import Cart, CartItem
 
-
 class CartItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(
         source="variant.product.name",
         read_only=True
     )
     variant_id = serializers.IntegerField(source="variant.id", read_only=True)
-    unit_price = serializers.DecimalField(
-        source="get_unit_price",
-        max_digits=12,
-        decimal_places=2,
-        read_only=True
-    )
+    unit_price = serializers.SerializerMethodField()
+    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
@@ -26,9 +21,16 @@ class CartItemSerializer(serializers.ModelSerializer):
             "total_price",
         ]
 
+    def get_unit_price(self, obj):
+        return obj.get_unit_price()
+
+    def get_total_price(self, obj):
+        return obj.total_price
+
+
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
-    total_price = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Cart
@@ -40,3 +42,5 @@ class CartSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def get_total_price(self, obj):
+        return obj.total_price
