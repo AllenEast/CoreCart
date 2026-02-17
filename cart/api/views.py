@@ -120,3 +120,5 @@ def cart_remove(request):
 def cart_clear(request):
     CartService.clear_cart(request.user)
     return _get_cart_response(request.user)
+
+
