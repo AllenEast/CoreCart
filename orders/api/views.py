@@ -7,6 +7,13 @@ from orders.api.serializers import CheckoutRequestSerializer, OrderSerializer
 from orders.services.checkout_service import CheckoutService
 from orders.models import Order
 
+from rest_framework import viewsets, permissions, decorators
+from rest_framework.response import Response
+from rest_framework import status
+
+from orders.models import Order
+from orders.api.serializers import OrderSerializer
+
 
 @extend_schema(
     tags=["Orders"],
@@ -42,3 +49,50 @@ def checkout(request):
     )
 
     return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+
+
+class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    - GET /api/orders/        → user's orders
+    - GET /api/orders/{id}/   → order detail
+    """
+
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Faqat o‘z orderlarini ko‘radi
+        return (
+            Order.objects
+            .filter(user=self.request.user)
+            .prefetch_related("items")
+            .order_by("-created_at")
+        )
+
+    @decorators.action(
+        detail=True,
+        methods=["patch"],
+        permission_classes=[permissions.IsAdminUser],
+    )
+    def update_status(self, request, pk=None):
+        order = self.get_object()
+
+        new_status = request.data.get("status")
+        if not new_status:
+            return Response(
+                {"detail": "status is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        valid_statuses = [choice[0] for choice in Order.STATUS_CHOICES]
+
+        if new_status not in valid_statuses:
+            return Response(
+                {"detail": "Invalid status"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        order.status = new_status
+        order.save(update_fields=["status"])
+
+        return Response(OrderSerializer(order).data)
