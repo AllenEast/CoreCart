@@ -32,13 +32,18 @@ INSTALLED_APPS = [
     "django_filters",
     "rest_framework_simplejwt",
 
+    # CORS (frontend domenlardan API'ga ruxsat berish uchun)
+    "corsheaders",
+
     "users",
     "catalog",
     "cart",
     "orders",
+    "payments",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -47,6 +52,39 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# -----------------
+# CORS CONFIG
+# -----------------
+# Agar frontend alohida domen/portda bo'lsa (masalan: http://localhost:3000),
+# shu yerda ruxsat beriladi.
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    val = os.getenv(name)
+    if val is None:
+        return default
+    return str(val).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _normalize_origin(origin: str) -> str:
+    o = origin.strip()
+    if not o:
+        return ""
+    # Agar scheme yo'q bo'lsa, http:// qo'shamiz
+    if "://" not in o:
+        o = f"http://{o}"
+    return o
+
+
+# Default: DEBUG bo'lsa allow-all (dev uchun qulay)
+CORS_ALLOW_ALL_ORIGINS = _env_bool("CORS_ORIGIN_ALLOW_ALL", default=DEBUG)
+
+_whitelist = os.getenv("CORS_ORIGIN_WHITELIST", "")
+_origins = [_normalize_origin(x) for x in _whitelist.split(",")]
+CORS_ALLOWED_ORIGINS = [x for x in _origins if x]
+
+# Cookie/JWT refresh kabi credential ishlatsangiz kerak bo'lishi mumkin
+CORS_ALLOW_CREDENTIALS = _env_bool("CORS_ALLOW_CREDENTIALS", default=True)
 
 ROOT_URLCONF = "karzina.urls"
 
@@ -116,6 +154,22 @@ SPECTACULAR_SETTINGS = {
 }
 
 
+ # Basic auth decoded string (login:password)
+PAYME_BASIC_AUTH = "Paycom:YOUR_KEY"
+
+# -----------------
+# CLICK (SHOP API)
+# -----------------
+# Click'ni ulash uchun kerak bo'ladigan qiymatlar.
+# Hozircha sizda kalitlar yo'q bo'lsa ham, Click endpointlar DEBUG=True rejimida
+# "mock" tarzda ishlashi mumkin (signature tekshiruvi o'chiriladi).
+
+CLICK_SERVICE_ID = os.getenv("CLICK_SERVICE_ID", "")
+CLICK_MERCHANT_USER_ID = os.getenv("CLICK_MERCHANT_USER_ID", "")
+CLICK_SECRET_KEY = os.getenv("CLICK_SECRET_KEY", "")
+
+# Prod'da (DEBUG=False) signature tekshiruvni majburiy qilamiz.
+CLICK_REQUIRE_SIGNATURE = _env_bool("CLICK_REQUIRE_SIGNATURE", default=not DEBUG)
 
 LOGGING = {
     "version": 1,

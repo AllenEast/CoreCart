@@ -1,6 +1,8 @@
-from django.urls import path, include
+# orders/api/urls.py
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from orders.api.views import checkout, OrderViewSet
+
+from orders.api.views import OrderViewSet, checkout
 
 router = DefaultRouter()
 router.register("", OrderViewSet, basename="orders")

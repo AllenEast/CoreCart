@@ -1,5 +1,4 @@
 from django.db import transaction
-from django.shortcuts import get_object_or_404
 from cart.models import Cart, CartItem
 from catalog.models import ProductVariant
 
@@ -10,6 +9,7 @@ class CartService:
         cart, _ = Cart.objects.get_or_create(user=user)
         return cart
 
+
     @staticmethod
     @transaction.atomic
     def add_to_cart(user, variant_id: int, quantity: int = 1):
@@ -18,14 +18,15 @@ class CartService:
 
         cart = CartService.get_or_create_cart(user)
 
-        # ✅ Aktiv variantni olamiz
-        variant = get_object_or_404(ProductVariant, id=variant_id, is_active=True)
+        try:
+            variant = (
+                ProductVariant.objects
+                .select_for_update()
+                .get(id=variant_id, is_active=True)
+            )
+        except ProductVariant.DoesNotExist:
+            raise ValueError("Variant not found or inactive.")
 
-        # ✅ Agar birinchi marta qo‘shilayotgan bo‘lsa ham stock yetarlimi?
-        if variant.stock_quantity < quantity:
-            raise ValueError("Not enough stock.")
-
-        # ✅ Lock bilan item olish
         item = (
             CartItem.objects
             .select_for_update()
@@ -33,23 +34,20 @@ class CartService:
             .first()
         )
 
+        current_qty = item.quantity if item else 0
+        new_qty = current_qty + quantity
+
+        if variant.stock_quantity < new_qty:
+            raise ValueError("Not enough stock.")
+
         if item:
-            new_qty = item.quantity + quantity
-
-            # ✅ Stockdan oshmasin
-            if variant.stock_quantity < new_qty:
-                raise ValueError("Not enough stock.")
-
             item.quantity = new_qty
             item.save(update_fields=["quantity"])
         else:
-            item = CartItem.objects.create(
-                cart=cart,
-                variant=variant,
-                quantity=quantity
-            )
+            item = CartItem.objects.create(cart=cart, variant=variant, quantity=quantity)
 
         return item
+
 
     @staticmethod
     @transaction.atomic
@@ -61,32 +59,42 @@ class CartService:
             variant_id=variant_id
         ).delete()
 
+
     @staticmethod
     @transaction.atomic
     def change_quantity(user, variant_id: int, quantity: int):
         cart = CartService.get_or_create_cart(user)
 
-        # 0 bo'lsa o‘chirish
         if quantity < 1:
             CartItem.objects.filter(cart=cart, variant_id=variant_id).delete()
             return None
 
-        # ✅ Variantni tekshirish (active + mavjud)
-        variant = get_object_or_404(ProductVariant, id=variant_id, is_active=True)
+        try:
+            variant = (
+                ProductVariant.objects
+                .select_for_update()
+                .get(id=variant_id, is_active=True)
+            )
+        except ProductVariant.DoesNotExist:
+            raise ValueError("Variant not found or inactive.")
 
-        # ✅ Stockdan oshmasin
         if variant.stock_quantity < quantity:
             raise ValueError("Not enough stock.")
 
-        # ✅ Itemni lock bilan olish
-        item = CartItem.objects.select_for_update().get(
-            cart=cart,
-            variant_id=variant_id
+        item = (
+            CartItem.objects
+            .select_for_update()
+            .filter(cart=cart, variant_id=variant_id)
+            .first()
         )
+
+        if not item:
+            raise ValueError("Item not found in cart.")
 
         item.quantity = quantity
         item.save(update_fields=["quantity"])
         return item
+
 
     @staticmethod
     @transaction.atomic
