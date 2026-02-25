@@ -31,3 +31,16 @@ types-PyYAML==6.0.12.20250915
 typing_extensions==4.15.0
 tzdata==2025.3
 uritemplate==4.2.0
+
+# Realtime chat (Django Channels)
+channels==4.2.0
+channels-redis==4.2.0
+
+# ASGI server (production)
+daphne==4.1.2
+
+# Optional (recommended) Redis cache for presence/unread tracking
+django-redis==5.4.0
+redis==5.2.1
+
+whitenoise==6.7.0

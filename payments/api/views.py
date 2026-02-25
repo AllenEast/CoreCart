@@ -2,6 +2,7 @@
 from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 
@@ -26,6 +27,7 @@ def _click_response(*, click_trans_id: str, merchant_trans_id: str, merchant_pre
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+@extend_schema(summary="Create COD payment", request=None, responses={200: PaymentSerializer})
 def cod_create(request, order_id: int):
     order = get_object_or_404(Order, pk=order_id)
 
@@ -38,6 +40,7 @@ def cod_create(request, order_id: int):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAdminUser])  # faqat admin/courier paid qiladi
+@extend_schema(summary="Mark COD order paid", request=None, responses={200: OpenApiTypes.OBJECT})
 def cod_mark_paid(request, order_id: int):
     order = get_object_or_404(Order, pk=order_id)
     payment = PaymentService.mark_cod_paid(order=order)
@@ -46,6 +49,7 @@ def cod_mark_paid(request, order_id: int):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+@extend_schema(summary="Mock pay (DEV)", request=None, responses={200: PaymentSerializer})
 def mock_pay(request, order_id: int):
     """DEV/TEST endpoint.
 
@@ -67,6 +71,7 @@ def mock_pay(request, order_id: int):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+@extend_schema(summary="Mock pay fail (DEV)", request=None, responses={200: OpenApiTypes.OBJECT})
 def mock_fail(request, order_id: int):
     """DEV/TEST endpoint.
 
@@ -93,6 +98,7 @@ def mock_fail(request, order_id: int):
 
 @api_view(["POST"])
 @permission_classes([permissions.AllowAny])
+@extend_schema(summary="Click prepare", request=None, responses={200: OpenApiTypes.OBJECT})
 def click_prepare(request):
     """Click 'Prepare' callback.
 
@@ -204,6 +210,7 @@ def click_prepare(request):
 
 @api_view(["POST"])
 @permission_classes([permissions.AllowAny])
+@extend_schema(summary="Click complete", request=None, responses={200: OpenApiTypes.OBJECT})
 def click_complete(request):
     """Click 'Complete' callback.
 
@@ -313,3 +320,6 @@ def click_complete(request):
         ),
         status=status.HTTP_200_OK,
     )
+
+
+

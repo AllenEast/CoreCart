@@ -3,6 +3,7 @@ from cart.models import Cart, CartItem
 
 from rest_framework import serializers
 from catalog.models import ProductVariant
+from decimal import Decimal
 
 
 
@@ -26,10 +27,10 @@ class CartItemSerializer(serializers.ModelSerializer):
             "total_price",
         ]
 
-    def get_unit_price(self, obj):
+    def get_unit_price(self, obj) -> Decimal:
         return obj.get_unit_price()
 
-    def get_total_price(self, obj):
+    def get_total_price(self, obj) -> Decimal:
         return obj.total_price
 
 
@@ -47,7 +48,7 @@ class CartSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
-    def get_total_price(self, obj):
+    def get_total_price(self, obj) -> Decimal:
         return obj.total_price
 
 

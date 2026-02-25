@@ -113,6 +113,7 @@ def cart_remove(request):
 @extend_schema(
     tags=["Cart"],
     summary="Clear cart",
+    request=None,
     responses={200: CartSerializer},
 )
 @api_view(["POST"])

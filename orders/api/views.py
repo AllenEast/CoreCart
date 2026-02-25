@@ -51,6 +51,8 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return self.queryset.none() if hasattr(self, 'queryset') and self.queryset is not None else Order.objects.none()
         qs = (
             Order.objects
             .prefetch_related("items", "items__variant")

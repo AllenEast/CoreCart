@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from catalog.models import Category, SubCategory, Brand, Product, ProductVariant, Discount, ProductImage
 from django.utils import timezone
+from decimal import Decimal
 
 
 class SubCategorySerializer(serializers.ModelSerializer):
@@ -107,11 +108,11 @@ class ProductListSerializer(serializers.ModelSerializer):
             "min_price",
         ]
 
-    def get_main_image(self, obj):
+    def get_main_image(self, obj) -> str | None:
         img = next((i for i in obj.images.all() if i.is_main), None)
         return img.image.url if img and img.image else None
 
-    def get_min_price(self, obj):
+    def get_min_price(self, obj) -> Decimal | None:
         prices = [v.price for v in obj.variants.all() if v.is_active]
         return min(prices) if prices else None
 

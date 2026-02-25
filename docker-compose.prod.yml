@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=karzina.settings.prod
+      # In Docker/dev we often run with DEBUG=False.
+      # Serve static/media via Django (in addition to WhiteNoise) to avoid missing admin assets.
+      - DJANGO_SERVE_STATIC=1
+      - DJANGO_SERVE_MEDIA=1
+      - REDIS_URL=redis://redis:6379/0
+      # If you use Postgres in prod, set DATABASE_URL in .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    depends_on:
+      - redis
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+volumes:
+  redis_data:
+  media_data:
+  static_data:
+
+networks:
+  backend:

@@ -3,11 +3,12 @@ import os
 
 import dj_database_url
 from dotenv import load_dotenv
+from datetime import timedelta
 
-# Project root (manage.py turgan papka)
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# .env ni yuklaymiz
+
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-insecure-secret-key")
@@ -25,14 +26,19 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+
+    "daphne",
+
     "django.contrib.staticfiles",
 
     "rest_framework",
     "drf_spectacular",
     "django_filters",
     "rest_framework_simplejwt",
+    "channels",
+    "chat",
 
-    # CORS (frontend domenlardan API'ga ruxsat berish uchun)
+
     "corsheaders",
 
     "users",
@@ -45,6 +51,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -53,11 +60,31 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# -----------------
-# CORS CONFIG
-# -----------------
-# Agar frontend alohida domen/portda bo'lsa (masalan: http://localhost:3000),
-# shu yerda ruxsat beriladi.
+ASGI_APPLICATION = "karzina.asgi.application"
+
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [REDIS_URL]},
+    }
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "karzinka-local",
+    }
+}
+
+if REDIS_URL:
+    CACHES["default"] = {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+    }
+
 
 def _env_bool(name: str, default: bool = False) -> bool:
     val = os.getenv(name)
@@ -70,20 +97,18 @@ def _normalize_origin(origin: str) -> str:
     o = origin.strip()
     if not o:
         return ""
-    # Agar scheme yo'q bo'lsa, http:// qo'shamiz
+
     if "://" not in o:
         o = f"http://{o}"
     return o
 
 
-# Default: DEBUG bo'lsa allow-all (dev uchun qulay)
+
 CORS_ALLOW_ALL_ORIGINS = _env_bool("CORS_ORIGIN_ALLOW_ALL", default=DEBUG)
 
 _whitelist = os.getenv("CORS_ORIGIN_WHITELIST", "")
 _origins = [_normalize_origin(x) for x in _whitelist.split(",")]
 CORS_ALLOWED_ORIGINS = [x for x in _origins if x]
-
-# Cookie/JWT refresh kabi credential ishlatsangiz kerak bo'lishi mumkin
 CORS_ALLOW_CREDENTIALS = _env_bool("CORS_ALLOW_CREDENTIALS", default=True)
 
 ROOT_URLCONF = "karzina.urls"
@@ -134,6 +159,13 @@ AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+}
+
 REST_FRAMEWORK.update({
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 })
@@ -154,21 +186,16 @@ SPECTACULAR_SETTINGS = {
 }
 
 
- # Basic auth decoded string (login:password)
+
 PAYME_BASIC_AUTH = "Paycom:YOUR_KEY"
 
-# -----------------
-# CLICK (SHOP API)
-# -----------------
-# Click'ni ulash uchun kerak bo'ladigan qiymatlar.
-# Hozircha sizda kalitlar yo'q bo'lsa ham, Click endpointlar DEBUG=True rejimida
-# "mock" tarzda ishlashi mumkin (signature tekshiruvi o'chiriladi).
+
 
 CLICK_SERVICE_ID = os.getenv("CLICK_SERVICE_ID", "")
 CLICK_MERCHANT_USER_ID = os.getenv("CLICK_MERCHANT_USER_ID", "")
 CLICK_SECRET_KEY = os.getenv("CLICK_SECRET_KEY", "")
 
-# Prod'da (DEBUG=False) signature tekshiruvni majburiy qilamiz.
+
 CLICK_REQUIRE_SIGNATURE = _env_bool("CLICK_REQUIRE_SIGNATURE", default=not DEBUG)
 
 LOGGING = {
@@ -179,3 +206,6 @@ LOGGING = {
 }
 
 
+
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"

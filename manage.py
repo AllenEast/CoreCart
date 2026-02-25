@@ -6,7 +6,12 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "karzina.settings.dev")
+    # Local dev default. In production, set DJANGO_SETTINGS_MODULE explicitly,
+    # e.g. karzina.settings.prod
+    os.environ.setdefault(
+        "DJANGO_SETTINGS_MODULE",
+        os.getenv("DJANGO_SETTINGS_MODULE", "karzina.settings.dev"),
+    )
 
     try:
         from django.core.management import execute_from_command_line
